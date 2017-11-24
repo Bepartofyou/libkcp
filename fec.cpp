@@ -2,8 +2,9 @@
 // Created by 理 傅 on 2017/1/2.
 //
 
-#include <err.h>
-#include <sys/time.h>
+//#include <err.h>
+//#include <sys/time.h>
+#include "util.h"
 #include <iostream>
 #include <stdexcept>
 #include "fec.h"
@@ -37,9 +38,10 @@ FEC::Decode(byte *data, size_t sz) {
     fecPacket pkt;
     data = decode32u(data, &pkt.seqid);
     data = decode16u(data, &pkt.flag);
-    struct timeval time;
-    gettimeofday(&time, NULL);
-    pkt.ts = uint32_t(time.tv_sec * 1000 + time.tv_usec/1000);
+    //struct timeval time;
+    //gettimeofday(&time, NULL);
+    //pkt.ts = uint32_t(time.tv_sec * 1000 + time.tv_usec/1000);
+	pkt.ts = iclock();
     pkt.data = std::make_shared<std::vector<byte>>(data, data+sz - fecHeaderSize);
     return pkt;
 }

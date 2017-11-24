@@ -3,8 +3,10 @@
 
 #include "ikcp.h"
 #include "fec.h"
-#include <sys/types.h>
-#include <sys/time.h>
+
+#include "util.h"
+//#include <sys/types.h>
+//#include <sys/time.h>
 
 class UDPSession  {
 private:
@@ -77,9 +79,10 @@ private:
 };
 
 inline uint32_t currentMs() {
-    struct timeval time;
-    gettimeofday(&time, NULL);
-    return uint32_t((time.tv_sec * 1000) + (time.tv_usec / 1000));
+	return iclock();
+    //struct timeval time;
+    //gettimeofday(&time, NULL);
+    //return uint32_t((time.tv_sec * 1000) + (time.tv_usec / 1000));
 }
 
 
