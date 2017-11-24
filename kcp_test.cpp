@@ -1,5 +1,5 @@
-#include <unistd.h>
-#include <sys/time.h>
+//#include <unistd.h>
+//#include <sys/time.h>
 #include <cstring>
 #include <cstdio>
 #include "sess.h"
@@ -7,9 +7,10 @@
 IUINT32 iclock();
 
 int main() {
-    struct timeval time;
-    gettimeofday(&time, NULL);
-    srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
+    //struct timeval time;
+    //gettimeofday(&time, NULL);
+    //srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
+	srand(iclock());
 
     UDPSession *sess = UDPSession::DialWithOptions("127.0.0.1", 9999, 2,2);
     sess->NoDelay(1, 20, 2, 1);
@@ -33,7 +34,8 @@ int main() {
         do {
             n = sess->Read(buf, 128);
             if (n > 0) { printf("%s\n", buf); }
-            usleep(33000);
+            //usleep(33000);
+			isleep(33000);
             sess->Update(iclock());
         } while(n==0);
     }
