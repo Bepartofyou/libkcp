@@ -5,12 +5,17 @@
 #include <stdexcept>
 #include "galois.h"
 
+#ifndef __unix
 extern "C"{
+#endif
 	extern const int fieldSize;
 	extern byte mulTable[256][256];
 	extern const byte logTable[];
 	extern byte expTable[];
+
+#ifndef __unix
 }
+#endif
 
 byte galAdd(byte a, byte b) {
     return a ^ b;

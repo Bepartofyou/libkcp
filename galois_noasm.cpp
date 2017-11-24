@@ -5,10 +5,13 @@
 #include "galois_noasm.h"
 #include "matrix.h"
 
-extern "C"{
+#ifndef __unix
+extern "C" {
+#endif
 	extern const byte mulTable[256][256];
+#ifndef __unix
 }
-
+#endif
 
 void galMulSlice(byte c, row_type in, row_type out) {
     for (int n=0;n<in->size();n++) {
