@@ -10,6 +10,8 @@
 
 UDPSession *
 UDPSession::Dial(const char *ip, uint16_t port) {
+	UDPSession::netinit();
+
     struct sockaddr_in saddr;
     memset(&saddr, 0, sizeof(saddr));
     saddr.sin_family = AF_INET;
@@ -29,6 +31,7 @@ UDPSession::Dial(const char *ip, uint16_t port) {
     }
     if (connect(sockfd, (struct sockaddr *) &saddr, sizeof(struct sockaddr)) < 0) {
         close(sockfd);
+		UDPSession::netuninit();
         return nullptr;
     }
 
@@ -54,6 +57,8 @@ UDPSession::DialWithOptions(const char *ip, uint16_t port, size_t dataShards, si
 
 UDPSession *
 UDPSession::dialIPv6(const char *ip, uint16_t port) {
+	UDPSession::netinit();
+
     struct sockaddr_in6 saddr;
     memset(&saddr, 0, sizeof(saddr));
     saddr.sin6_family = AF_INET6;
@@ -68,6 +73,7 @@ UDPSession::dialIPv6(const char *ip, uint16_t port) {
     }
     if (connect(sockfd, (struct sockaddr *) &saddr, sizeof(struct sockaddr_in6)) < 0) {
         close(sockfd);
+		UDPSession::netuninit();
         return nullptr;
     }
 
@@ -76,6 +82,8 @@ UDPSession::dialIPv6(const char *ip, uint16_t port) {
 
 UDPSession *
 UDPSession::createSession(int sockfd) {
+
+#ifdef __unix
     int flags = fcntl(sockfd, F_GETFL, 0);
     if (flags < 0) {
         return nullptr;
@@ -84,6 +92,12 @@ UDPSession::createSession(int sockfd) {
     if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
         return nullptr;
     }
+#else
+	unsigned long  ul = 1;
+	if (ioctlsocket(sockfd, FIONBIO, &ul) < 0) {
+		return nullptr;
+	}	
+#endif
 
     UDPSession *sess = new(UDPSession);
     sess->m_sockfd = sockfd;
@@ -96,7 +110,11 @@ UDPSession::createSession(int sockfd) {
 void
 UDPSession::Update(uint32_t current) noexcept {
     for (;;) {
+#ifdef __unix
         ssize_t n = recv(m_sockfd, m_buf, sizeof(m_buf), 0);
+#else
+		ssize_t n = recv(m_sockfd, (char*)m_buf, sizeof(m_buf), 0);
+#endif
         if (n > 0) {
             if (fec.isEnabled()) {
                 // decode FEC packet
@@ -144,7 +162,10 @@ UDPSession::Update(uint32_t current) noexcept {
 void
 UDPSession::Destroy(UDPSession *sess) {
     if (nullptr == sess) return;
-    if (0 != sess->m_sockfd) { close(sess->m_sockfd); }
+	if (0 != sess->m_sockfd) {
+		close(sess->m_sockfd); 		
+		UDPSession::netuninit();
+	}
     if (nullptr != sess->m_kcp) { ikcp_release(sess->m_kcp); }
     delete sess;
 }
@@ -192,7 +213,11 @@ UDPSession::Write(const char *buf, size_t sz) noexcept {
 int
 UDPSession::SetDSCP(int iptos) noexcept {
     iptos = (iptos << 2) & 0xFF;
+#ifdef __unix
     return setsockopt(this->m_sockfd, IPPROTO_IP, IP_TOS, &iptos, sizeof(iptos));
+#else
+	return setsockopt(this->m_sockfd, IPPROTO_IP, IP_TOS, (const char*)&iptos, sizeof(iptos));
+#endif
 }
 
 void
@@ -246,6 +271,25 @@ UDPSession::out_wrapper(const char *buf, int len, struct IKCPCB *, void *user) {
 
 ssize_t
 UDPSession::output(const void *buffer, size_t length) {
+#ifdef __unix
     ssize_t n = send(m_sockfd, buffer, length, 0);
+#else
+	ssize_t n = send(m_sockfd, (const char *)buffer, length, 0);
+#endif
     return n;
+}
+
+void
+UDPSession::netinit() {
+#ifndef __unix
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
+}
+
+void
+UDPSession::netuninit() {
+#ifndef __unix
+	WSACleanup();
+#endif
 }

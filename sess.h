@@ -59,6 +59,10 @@ public:
 
     inline int SetMtu(int mtu) { return ikcp_setmtu(m_kcp, mtu); }
 
+	//win32 socket
+	static inline void netinit();
+	static inline void netuninit();
+
 private:
     UDPSession() = default;
 

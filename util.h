@@ -10,9 +10,15 @@
 #include "ikcp.h"
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+//#include <winsock.h>
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#pragma comment(lib,"Ws2_32")
 #include <windows.h>
 #include <BaseTsd.h>
+#define close(x) closesocket(x) 
 typedef SSIZE_T ssize_t;
+
 #elif !defined(__unix)
 #define __unix
 #endif
@@ -26,6 +32,7 @@ typedef SSIZE_T ssize_t;
 #include <sys/socket.h>
 #include <sys/fcntl.h>
 #include <arpa/inet.h>
+#include <errno.h>
 #endif
 
 /* get system time */
