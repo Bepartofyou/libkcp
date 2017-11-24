@@ -35,7 +35,7 @@ int main() {
             n = sess->Read(buf, 128);
             if (n > 0) { printf("%s\n", buf); }
             //usleep(33000);
-			isleep(33000);
+			isleep(33000/1000);
             sess->Update(iclock());
         } while(n==0);
     }
