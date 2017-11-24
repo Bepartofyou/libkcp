@@ -5,11 +5,9 @@
 #include "galois.h"
 
 // The number of elements in the field.
-#ifndef __unix
+//const int fieldSize = 256
 #define fieldSize 256
-#else
-const int fieldSize = 256;
-#endif
+
 
 // The polynomial used to generate the logarithm table.
 //
