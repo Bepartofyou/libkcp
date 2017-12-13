@@ -4,7 +4,7 @@
 #include <cstdio>
 #include "sess.h"
 
-#define  MAX_LEN 10 * 1024
+#define  MAX_LEN 60 * 1024
 
 IUINT32 iclock();
 
@@ -45,7 +45,7 @@ int main() {
 		}else {
 			if (iclock() - gTime > 1000) {
 				ikcpcb* sKcp = sess->GetKcp();
-				printf("[kcpinfo] rmt_wnd:%d,cwnd:%d,nsnd_buf:%d,nsnd_que:%d,nrcv_buf:%d,nrcv_que:%d,rx_rttval:%d,rx_srtt:%d,rx_rto:%d,rx_minrto:%d\n", 
+				printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n", 
 					sKcp->rmt_wnd, sKcp->cwnd,sKcp->nsnd_buf,sKcp->nsnd_que,sKcp->nrcv_buf,sKcp->nrcv_que,
 					sKcp->rx_rttval, sKcp->rx_srtt, sKcp->rx_rto, sKcp->rx_minrto);
 				gTime = iclock();
@@ -67,6 +67,7 @@ int main() {
 			//isleep(3);
             sess->Update(iclock());
         } while(n==0);
+		isleep(33);
     }
 
     UDPSession::Destroy(sess);
