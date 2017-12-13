@@ -4,13 +4,40 @@
 #include <cstdio>
 #include "sess.h"
 
-#define  MAX_LEN 100 * 1024
-
-IUINT32 iclock();
-
 static IUINT32 gTime = 0;
 static IUINT32 gCount = 0;
 static IUINT32 gCount_last = 0;
+
+static char *buf_w = NULL;
+static char *buf_r = NULL;
+
+#ifdef __unix
+#include <pthread>
+#include <signal.h>
+static bool bstop = false;
+pthread_mutex_t mutex;
+
+static void sig_handler(int signo){
+	printf("thread stop sginal!\n");
+	bstop = true;
+}
+
+void *send_thread(void* data) {
+	UDPSession *sess = (UDPSession *)data;
+	while (!bstop) {
+		pthread_mutex_lock(&mutex);
+		auto sz = strlen(buf_w);
+		gCount += sz;
+		sess->Write(buf_w, sz);
+		sess->Update(iclock());
+		pthread_mutex_unlock(&mutex);
+
+		isleep(5);
+	}
+}
+#endif //__unix
+
+#define  MAX_LEN 100 * 1024
 
 int main() {
     //struct timeval time;
@@ -28,16 +55,28 @@ int main() {
 	sess->SetStreamMode(false);
     sess->SetDSCP(46);
 
+
     assert(sess != nullptr);
     ssize_t nsent = 0;
     ssize_t nrecv = 0;
     //char *buf = (char *) malloc(128);
-	char *buf_w = (char *)malloc(MAX_LEN);
-	char *buf_r = (char *)malloc(MAX_LEN*100);
+	buf_w = (char *)malloc(MAX_LEN);
+	buf_r = (char *)malloc(MAX_LEN*100);
 	for (size_t i = 0; i < MAX_LEN; i += 10)
 	{
 		sprintf(buf_w + i, "tick-%05d", i);
 	}
+
+#ifdef __unix
+	if (signal(SIGINT, sig_handler) == SIG_ERR) {
+		printf("\ncan't catch SIGINT\n");
+	}
+
+	pthread_mutex_init(&mutex, NULL);
+	pthread_t ptid;
+	pthread_create(&ptid, NULL, send_thread, (void*)sess);
+#endif // __unix
+
 
     //for (int i = 0; i < 10; i++) {
 	for (;;) {
@@ -56,12 +95,12 @@ int main() {
 			}
 		}
 
-
-        //sprintf(buf, "message:%d", i);
+#ifndef __unix
         auto sz = strlen(buf_w);
 		gCount += sz;
         sess->Write(buf_w, sz);
         sess->Update(iclock());
+#endif
         memset(buf_r, 0, MAX_LEN);
         ssize_t n = 0;
         do {
@@ -77,6 +116,11 @@ int main() {
         } while(n!=0);
 		isleep(5);
     }
+
+#ifdef __unix
+	pthread_join(ptid, NULL);
+	pthread_mutex_destroy(&mutex);
+#endif // __unix
 
     UDPSession::Destroy(sess);
 
