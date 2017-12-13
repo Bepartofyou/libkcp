@@ -13,7 +13,7 @@ static char *buf_r = NULL;
 
 static bool bstop = false;
 
-#define ___unix
+//#define ___unix
 
 #ifdef ___unix
 #include <pthread.h>
@@ -48,7 +48,7 @@ int main() {
     //srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
 	srand(iclock());
 
-    UDPSession *sess = UDPSession::DialWithOptions("192.168.56.128", 9999, 2,2);
+    UDPSession *sess = UDPSession::DialWithOptions("192.168.56.128", 9999, 0,0);
     sess->NoDelay(1, 20, 2, 1);
 	//sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);
@@ -120,11 +120,6 @@ int main() {
 #endif
             n = sess->Read(buf_r, MAX_LEN * 100);
             //if (n > 0) { printf("%d\n", strlen(buf_r)); }
-			//printf("1111111111111: %d\n", n);
-			//fflush(stdout);
-			//fflush(stderr);
-            //usleep(33000);
-			//isleep(33000/1000);
 			//isleep(3);
             sess->Update(iclock());
 #ifdef ___unix
@@ -150,26 +145,3 @@ int main() {
 		buf_r = NULL;
 	}
 }
-
-
-//void
-//itimeofday(long *sec, long *usec) {
-//    struct timeval time;
-//    gettimeofday(&time, NULL);
-//    if (sec) *sec = time.tv_sec;
-//    if (usec) *usec = time.tv_usec;
-//}
-//
-//IUINT64 iclock64(void) {
-//    long s, u;
-//    IUINT64 value;
-//    itimeofday(&s, &u);
-//    value = ((IUINT64) s) * 1000 + (u / 1000);
-//    return value;
-//}
-//
-//IUINT32 iclock() {
-//    return (IUINT32) (iclock64() & 0xfffffffful);
-//}
-
-
