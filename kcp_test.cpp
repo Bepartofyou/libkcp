@@ -47,7 +47,7 @@ int main() {
             //if (n > 0) { printf("%s\n", buf); }
             //usleep(33000);
 			//isleep(33000/1000);
-			isleep(3);
+			//isleep(3);
             sess->Update(iclock());
         } while(n==0);
     }
