@@ -288,6 +288,7 @@ UDPSession::out_wrapper(const char *buf, int len, struct IKCPCB *, void *user) {
 
 ssize_t
 UDPSession::output(const void *buffer, size_t length) {
+	m_count += length;
 #ifdef __unix
     ssize_t n = send(m_sockfd, buffer, length, 0);
 #else

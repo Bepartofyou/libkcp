@@ -94,8 +94,9 @@ int main() {
 				pthread_mutex_lock(&mutex);
 #endif
 				ikcpcb* sKcp = sess->GetKcp();
-				printf("[kcpdata]  %d kBps\n", (gCount-gCount_last)/1000);
+				printf("[kcpdata]  %d kBps [readdata] %d kBps\n", (gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000);
 				gCount_last = gCount;
+				sess->m_count_l = sess->m_count;
 				printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n", 
 					sKcp->rmt_wnd, sKcp->cwnd,sKcp->nsnd_buf,sKcp->nsnd_que,sKcp->nrcv_buf,sKcp->nrcv_que,
 					sKcp->rx_rttval, sKcp->rx_srtt, sKcp->rx_rto, sKcp->rx_minrto);
