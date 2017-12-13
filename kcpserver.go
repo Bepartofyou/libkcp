@@ -41,6 +41,7 @@ func handle_client(conn *kcp.UDPSession) {
 		}
 		count++
 		//		fmt.Println("received:", string(buf[:n]))
+		//fmt.Println("received: ", n)
 		conn.Write(buf[:n])
 	}
 }
