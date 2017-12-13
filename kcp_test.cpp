@@ -9,6 +9,8 @@
 IUINT32 iclock();
 
 static IUINT32 gTime = 0;
+static IUINT32 gCount = 0;
+static IUINT32 gCount_last = 0;
 
 int main() {
     //struct timeval time;
@@ -45,6 +47,8 @@ int main() {
 		}else {
 			if (iclock() - gTime > 1000) {
 				ikcpcb* sKcp = sess->GetKcp();
+				printf("[kcpdata]  %d kBps\n", (gCount-gCount_last)/1000);
+				gCount_last = gCount;
 				printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n", 
 					sKcp->rmt_wnd, sKcp->cwnd,sKcp->nsnd_buf,sKcp->nsnd_que,sKcp->nrcv_buf,sKcp->nrcv_que,
 					sKcp->rx_rttval, sKcp->rx_srtt, sKcp->rx_rto, sKcp->rx_minrto);
@@ -55,6 +59,7 @@ int main() {
 
         //sprintf(buf, "message:%d", i);
         auto sz = strlen(buf_w);
+		gCount += sz;
         sess->Write(buf_w, sz);
         sess->Update(iclock());
         memset(buf_r, 0, MAX_LEN);
