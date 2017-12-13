@@ -31,7 +31,7 @@ int main() {
     ssize_t nrecv = 0;
     //char *buf = (char *) malloc(128);
 	char *buf_w = (char *)malloc(MAX_LEN);
-	char *buf_r = (char *)malloc(MAX_LEN);
+	char *buf_r = (char *)malloc(MAX_LEN*100);
 	for (size_t i = 0; i < MAX_LEN; i += 10)
 	{
 		sprintf(buf_w + i, "tick-%05d", i);
@@ -60,7 +60,7 @@ int main() {
         memset(buf_r, 0, MAX_LEN);
         ssize_t n = 0;
         do {
-            n = sess->Read(buf_r, MAX_LEN);
+            n = sess->Read(buf_r, MAX_LEN * 100);
             //if (n > 0) { printf("%d\n", strlen(buf_r)); }
             //usleep(33000);
 			//isleep(33000/1000);
