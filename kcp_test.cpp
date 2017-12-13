@@ -65,7 +65,7 @@ int main() {
             //usleep(33000);
 			//isleep(33000/1000);
 			//isleep(3);
-            sess->Update(iclock());
+            //sess->Update(iclock());
         } while(n==0);
 		isleep(10);
     }
