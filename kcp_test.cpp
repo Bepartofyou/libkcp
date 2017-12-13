@@ -4,7 +4,7 @@
 #include <cstdio>
 #include "sess.h"
 
-#define  MAX_LEN 250 * 1024
+#define  MAX_LEN 100 * 1024
 
 IUINT32 iclock();
 
@@ -19,10 +19,10 @@ int main() {
 	srand(iclock());
 
     UDPSession *sess = UDPSession::DialWithOptions("192.168.56.128", 9999, 2,2);
-    sess->NoDelay(1, 10, 2, 1);
+    sess->NoDelay(1, 20, 2, 1);
 	//sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);
-	sess->WndSize(8192, 8192);
+	sess->WndSize(1024, 1024);
     sess->SetMtu(1400);
     //sess->SetStreamMode(true);
 	sess->SetStreamMode(false);
@@ -75,7 +75,7 @@ int main() {
 			//isleep(3);
             sess->Update(iclock());
         } while(n!=0);
-//		isleep(1);
+		isleep(5);
     }
 
     UDPSession::Destroy(sess);
