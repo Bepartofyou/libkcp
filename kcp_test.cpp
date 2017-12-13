@@ -61,7 +61,7 @@ int main() {
         ssize_t n = 0;
         do {
             n = sess->Read(buf_r, MAX_LEN);
-            //if (n > 0) { printf("%s\n", buf); }
+            //if (n > 0) { printf("%d\n", strlen(buf_r)); }
             //usleep(33000);
 			//isleep(33000/1000);
 			//isleep(3);
