@@ -8,6 +8,8 @@
 
 IUINT32 iclock();
 
+static IUINT32 gTime = 0;
+
 int main() {
     //struct timeval time;
     //gettimeofday(&time, NULL);
@@ -15,7 +17,8 @@ int main() {
 	srand(iclock());
 
     UDPSession *sess = UDPSession::DialWithOptions("127.0.0.1", 9999, 2,2);
-    sess->NoDelay(1, 20, 2, 1);
+    sess->NoDelay(1, 10, 2, 1);
+	//sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);
 	sess->WndSize(8192, 8192);
     sess->SetMtu(1400);
@@ -36,6 +39,20 @@ int main() {
 
     //for (int i = 0; i < 10; i++) {
 	for (;;) {
+
+		if (gTime==0){
+			gTime = iclock();
+		}else {
+			if (iclock() - gTime > 1000) {
+				ikcpcb* sKcp = sess->GetKcp();
+				printf("[kcpinfo] rmt_wnd:%d,cwnd:%d,nsnd_buf:%d,nsnd_que:%d,nrcv_buf:%d,nrcv_que:%d,rx_rttval:%d,rx_srtt:%d,rx_rto:%d,rx_minrto:%d\n", 
+					sKcp->rmt_wnd, sKcp->cwnd,sKcp->nsnd_buf,sKcp->nsnd_que,sKcp->nrcv_buf,sKcp->nrcv_que,
+					sKcp->rx_rttval, sKcp->rx_srtt, sKcp->rx_rto, sKcp->rx_minrto);
+				gTime = iclock();
+			}
+		}
+
+
         //sprintf(buf, "message:%d", i);
         auto sz = strlen(buf_w);
         sess->Write(buf_w, sz);

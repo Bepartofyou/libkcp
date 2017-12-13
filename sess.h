@@ -22,6 +22,8 @@ private:
     size_t dataShards{0};
     size_t parityShards{0};
 public:
+	ikcpcb * GetKcp() { return m_kcp; }
+
     UDPSession(const UDPSession &) = delete;
 
     UDPSession &operator=(const UDPSession &) = delete;
