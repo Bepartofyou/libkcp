@@ -10,3 +10,5 @@ set(SOURCE_FILES_FEC galois.cpp galois_noasm.cpp matrix.cpp inversion_tree.cpp r
 set(SOURCE_FILES ikcp.c sess.cpp galois.cpp galois_noasm.cpp matrix.cpp inversion_tree.cpp reedsolomon.cpp fec.cpp galois_table.c)
 add_executable(kcp_test ${SOURCE_FILES} ${MAIN_TEST})
 add_executable(fec_test ${SOURCE_FILES_FEC} ${FEC_TEST})
+
+target_link_libraries(kcp_test pthread rt)
