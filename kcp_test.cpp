@@ -4,7 +4,7 @@
 #include <cstdio>
 #include "sess.h"
 
-#define  MAX_LEN 60 * 1024
+#define  MAX_LEN 250 * 1024
 
 IUINT32 iclock();
 
@@ -67,10 +67,10 @@ int main() {
 			//fflush(stderr);
             //usleep(33000);
 			//isleep(33000/1000);
-			isleep(3);
+			//isleep(3);
             sess->Update(iclock());
         } while(n!=0);
-		//isleep(10);
+//		isleep(1);
     }
 
     UDPSession::Destroy(sess);
