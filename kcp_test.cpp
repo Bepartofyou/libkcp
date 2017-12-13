@@ -67,7 +67,7 @@ int main() {
 			//isleep(3);
             sess->Update(iclock());
         } while(n==0);
-		isleep(33);
+		isleep(10);
     }
 
     UDPSession::Destroy(sess);
