@@ -5,8 +5,8 @@
 #include "sess.h"
 
 static IUINT32 gTime = 0;
-static IUINT32 gCount = 0;
-static IUINT32 gCount_last = 0;
+static IUINT64 gCount = 0;
+static IUINT64 gCount_last = 0;
 
 static char *buf_w = NULL;
 static char *buf_r = NULL;
@@ -40,7 +40,7 @@ void *send_thread(void* data) {
 }
 #endif //__unix
 
-#define  MAX_LEN 20 * 1024
+#define  MAX_LEN 60 * 1024
 
 int main() {
     //struct timeval time;
@@ -94,7 +94,9 @@ int main() {
 				pthread_mutex_lock(&mutex);
 #endif
 				ikcpcb* sKcp = sess->GetKcp();
-				printf("[kcpdata]  %d kBps [readdata] %d kBps\n", (gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000);
+				printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kB [realtotal] %llu kB\n",
+						(gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000,
+						gCount/1000,sess->m_count/1000);
 				gCount_last = gCount;
 				sess->m_count_l = sess->m_count;
 				printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n", 
@@ -127,7 +129,7 @@ int main() {
 			pthread_mutex_unlock(&mutex);
 #endif
         } while(n!=0);
-		isleep(5);
+		isleep(2);
     }
 
 #ifdef ___unix

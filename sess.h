@@ -22,8 +22,8 @@ private:
     size_t dataShards{0};
     size_t parityShards{0};
 public:
-	int m_count{ 0 };
-	int m_count_l{ 0 };
+	IUINT64 m_count{ 0 };
+	IUINT64 m_count_l{ 0 };
 	ikcpcb * GetKcp() { return m_kcp; }
 
     UDPSession(const UDPSession &) = delete;
