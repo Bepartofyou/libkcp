@@ -201,7 +201,7 @@ UDPSession::Read(char *buf, size_t sz) noexcept {
 	printf("peeksize: %d\n", psz);
 #else
     int psz = ikcp_peeksize(m_kcp);
-//	printf("peeksize: %d\n", psz);
+	//printf("peeksize: %d\n", psz);
 #endif
 
     if (psz <= 0) {
