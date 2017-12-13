@@ -17,7 +17,7 @@ int main() {
 	srand(iclock());
 
     UDPSession *sess = UDPSession::DialWithOptions("127.0.0.1", 9999, 2,2);
-    sess->NoDelay(1, 1, 2, 1);
+    sess->NoDelay(1, 10, 2, 1);
 	//sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);
 	sess->WndSize(8192, 8192);
@@ -64,7 +64,7 @@ int main() {
             //if (n > 0) { printf("%d\n", strlen(buf_r)); }
             //usleep(33000);
 			//isleep(33000/1000);
-			//isleep(3);
+			isleep(3);
             sess->Update(iclock());
         } while(n==0);
 		isleep(10);
