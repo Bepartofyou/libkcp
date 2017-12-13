@@ -17,7 +17,7 @@ int main() {
     UDPSession *sess = UDPSession::DialWithOptions("127.0.0.1", 9999, 2,2);
     sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);
-	sess->WndSize(1024, 1024);
+	sess->WndSize(8192, 8192);
     sess->SetMtu(1400);
     //sess->SetStreamMode(true);
 	sess->SetStreamMode(false);
