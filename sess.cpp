@@ -186,9 +186,18 @@ UDPSession::Read(char *buf, size_t sz) noexcept {
         return n;
     }
 
-    int psz = ikcp_peeksize(m_kcp);
+	int psz = 0;
+	while (true)
+	{
+		int sizet = ikcp_peeksize(m_kcp);
+		if (sizet > 0)
+			psz += sizet;
+		else
+			break;
+	}
+    //int psz = ikcp_peeksize(m_kcp);
 	//if (psz > 6000 * 1024){
-		printf("peeksize: %d\n", psz);
+	//	printf("peeksize: %d\n", psz);
 	//}
 
     if (psz <= 0) {
