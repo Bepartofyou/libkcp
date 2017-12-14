@@ -4,6 +4,7 @@
 #include <cstdio>
 #include "sess.h"
 
+static IUINT32 gStart = 0;
 static IUINT32 gTime = 0;
 static IUINT64 gCount = 0;
 static IUINT64 gCount_last = 0;
@@ -13,7 +14,7 @@ static char *buf_r = NULL;
 
 static bool bstop = false;
 
-//#define ___unix
+#define ___unix
 
 #ifdef ___unix
 #include <pthread.h>
@@ -34,13 +35,14 @@ void *send_thread(void* data) {
 		sess->Update(iclock());
 		gCount += retval;
 		pthread_mutex_unlock(&mutex);
-
-		isleep(1);
+		
+//		if(retval == 0)
+//		    isleep(1);
 	}
 }
 #endif //__unix
 
-#define  MAX_LEN 60 * 1024
+#define  MAX_LEN 20 * 1024
 
 int main() {
     //struct timeval time;
@@ -52,7 +54,7 @@ int main() {
     sess->NoDelay(1, 20, 2, 1);
 	//sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);
-	sess->WndSize(4096, 4096);
+	sess->WndSize(1024, 1024);
     sess->SetMtu(1400);
     //sess->SetStreamMode(true);
 	sess->SetStreamMode(false);
@@ -88,15 +90,16 @@ int main() {
 
 		if (gTime==0){
 			gTime = iclock();
+			gStart = gTime;
 		}else {
 			if (iclock() - gTime > 1000) {
 #ifdef ___unix
 				pthread_mutex_lock(&mutex);
 #endif
 				ikcpcb* sKcp = sess->GetKcp();
-				printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kB [realtotal] %llu kB\n",
+				printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kBps [realtotal] %llu kBps\n",
 						(gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000,
-						gCount/1000,sess->m_count/1000);
+						gCount/1000/((iclock()-gStart)/1000),sess->m_count/1000/((iclock()-gStart)/1000),sess->m_count/1000);
 				gCount_last = gCount;
 				sess->m_count_l = sess->m_count;
 				printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n", 
@@ -129,7 +132,7 @@ int main() {
 			pthread_mutex_unlock(&mutex);
 #endif
         } while(n!=0);
-		isleep(2);
+		//isleep(2);
     }
 
 #ifdef ___unix
