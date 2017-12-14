@@ -30,9 +30,9 @@ void *send_thread(void* data) {
 	while (!bstop) {
 		pthread_mutex_lock(&mutex);
 		auto sz = strlen(buf_w);
-		gCount += sz;
-		sess->Write(buf_w, sz);
+		int retval = sess->Write(buf_w, sz);
 		sess->Update(iclock());
+		gCount += retval;
 		pthread_mutex_unlock(&mutex);
 
 		isleep(1);
@@ -111,9 +111,9 @@ int main() {
 
 #ifndef ___unix
         auto sz = strlen(buf_w);
-		gCount += sz;
-        sess->Write(buf_w, sz);
+        int retval = sess->Write(buf_w, sz);
         sess->Update(iclock());
+		gCount += retval;
 #endif
         memset(buf_r, 0, MAX_LEN);
         ssize_t n = 0;
