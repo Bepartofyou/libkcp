@@ -4,13 +4,16 @@ project(kcp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 set(MAIN_TEST kcp_test.cpp)
+set(SERV_TEST kcp_server.cpp)
 set(FEC_TEST fec_test.cpp)
 set(SOURCE_FILES_FEC galois.cpp galois_noasm.cpp matrix.cpp inversion_tree.cpp reedsolomon.cpp fec.cpp galois_table.c)
 
 set(SOURCE_FILES ikcp.c sess.cpp galois.cpp galois_noasm.cpp matrix.cpp inversion_tree.cpp reedsolomon.cpp fec.cpp galois_table.c)
 add_executable(kcp_test ${SOURCE_FILES} ${MAIN_TEST})
+add_executable(kcp_server ${SOURCE_FILES} ${SERV_TEST})
 add_executable(fec_test ${SOURCE_FILES_FEC} ${FEC_TEST})
 
 if(UNIX)
 target_link_libraries(kcp_test pthread rt)
+target_link_libraries(kcp_server pthread rt)
 endif(UNIX)

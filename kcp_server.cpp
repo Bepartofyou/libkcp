@@ -45,27 +45,19 @@ void *send_thread(void* data) {
 #define  MAX_LEN 20 * 1024
 
 int main() {
-    //struct timeval time;
-    //gettimeofday(&time, NULL);
-    //srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
 	srand(iclock());
 
-    UDPSession *sess = UDPSession::DialWithOptions("192.168.56.128", 9999, 0,0);
+    UDPSession *sess = UDPSession::ListenWithOptions("0.0.0.0", 9999, 0,0);
     sess->NoDelay(1, 20, 2, 1);
-	//sess->NoDelay(1, 20, 2, 1);
-    //sess->WndSize(128, 128);
-	sess->WndSize(4096, 4096);
+	sess->WndSize(1024, 1024);
     sess->SetMtu(1400);
-    //sess->SetStreamMode(true);
 	sess->SetStreamMode(false);
     sess->SetDSCP(46);
-	sess->SetHost(false);
-
+	sess->SetHost(true);
 
     assert(sess != nullptr);
     ssize_t nsent = 0;
     ssize_t nrecv = 0;
-    //char *buf = (char *) malloc(128);
 	buf_w = (char *)malloc(MAX_LEN);
 	buf_r = (char *)malloc(MAX_LEN*100);
 	for (size_t i = 0; i < MAX_LEN; i += 10)
@@ -113,26 +105,27 @@ int main() {
 			}
 		}
 
-#ifndef ___unix
-        auto sz = strlen(buf_w);
-        int retval = sess->Write(buf_w, sz);
-        sess->Update(iclock());
-		gCount += retval;
-#endif
-        memset(buf_r, 0, MAX_LEN);
-        ssize_t n = 0;
-        do {
+		sess->Update(iclock());
+		
+		ssize_t n = 0;
+		do {
 #ifdef ___unix
 			pthread_mutex_lock(&mutex);
 #endif
-            n = sess->Read(buf_r, MAX_LEN * 100);
-            //if (n > 0) { printf("%d\n", strlen(buf_r)); }
-			//isleep(3);
-            sess->Update(iclock());
+			memset(buf_r, 0, MAX_LEN);
+			n = sess->Read(buf_r, MAX_LEN * 100);
+
+			if (n > 0) {
+				auto sz = strlen(buf_r);
+				int retval = sess->Write(buf_r, sz);
+				gCount += retval;
+			}
+
+			sess->Update(iclock());
 #ifdef ___unix
 			pthread_mutex_unlock(&mutex);
 #endif
-        } while(n!=0);
+		} while (n != 0);
 		//isleep(2);
     }
 

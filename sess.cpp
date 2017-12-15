@@ -2,11 +2,83 @@
 #include "encoding.h"
 #include <iostream>
 #include "util.h"
-//#include <sys/socket.h>
-//#include <sys/fcntl.h>
-//#include <arpa/inet.h>
-//#include <unistd.h>
 #include <cstring>
+
+UDPSession *
+UDPSession::Listen(const char *ip, uint16_t port) {
+	UDPSession::netinit();
+
+	struct sockaddr_in laddr;
+	memset(&laddr, 0, sizeof(laddr));
+	laddr.sin_family = AF_INET;
+	laddr.sin_port = htons(port);
+	int ret = inet_pton(AF_INET, ip, &(laddr.sin_addr));
+
+	if (ret == 1) { // do nothing
+	}
+	else if (ret == 0) { // try ipv6
+		return UDPSession::listenIPv6(ip, port);
+	}
+	else if (ret == -1) {
+		return nullptr;
+	}
+
+	int sockfd = socket(PF_INET, SOCK_DGRAM, 0);
+	if (sockfd == -1) {
+		return nullptr;
+	}
+
+	if (bind(sockfd, (struct sockaddr *) &laddr, sizeof(struct sockaddr)) < 0) {
+		close(sockfd);
+		UDPSession::netuninit();
+		return nullptr;
+	}
+
+	return UDPSession::createSession(sockfd);
+}
+
+UDPSession *
+UDPSession::ListenWithOptions(const char *ip, uint16_t port, size_t dataShards, size_t parityShards) {
+	auto sess = UDPSession::Listen(ip, port);
+	if (sess == nullptr) {
+		return nullptr;
+	}
+
+	if (dataShards > 0 && parityShards > 0) {
+		sess->fec = FEC::New(3 * (dataShards + parityShards), dataShards, parityShards);
+		sess->shards.resize(dataShards + parityShards, nullptr);
+		sess->dataShards = dataShards;
+		sess->parityShards = parityShards;
+	}
+	return sess;
+};
+
+
+UDPSession *
+UDPSession::listenIPv6(const char *ip, uint16_t port) {
+	UDPSession::netinit();
+
+	struct sockaddr_in6 laddr;
+	memset(&laddr, 0, sizeof(laddr));
+	laddr.sin6_family = AF_INET6;
+	laddr.sin6_port = htons(port);
+	if (inet_pton(AF_INET6, ip, &(laddr.sin6_addr)) != 1) {
+		return nullptr;
+	}
+
+	int sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+	if (sockfd == -1) {
+		return nullptr;
+	}
+
+	if (bind(sockfd, (struct sockaddr *) &laddr, sizeof(struct sockaddr)) < 0) {
+		close(sockfd);
+		UDPSession::netuninit();
+		return nullptr;
+	}
+
+	return UDPSession::createSession(sockfd);
+}
 
 UDPSession *
 UDPSession::Dial(const char *ip, uint16_t port) {
@@ -101,7 +173,8 @@ UDPSession::createSession(int sockfd) {
 
     UDPSession *sess = new(UDPSession);
     sess->m_sockfd = sockfd;
-    sess->m_kcp = ikcp_create(IUINT32(rand()), sess);
+    //sess->m_kcp = ikcp_create(IUINT32(rand()), sess);
+	sess->m_kcp = ikcp_create(IUINT32(1234), sess);
     sess->m_kcp->output = sess->out_wrapper;
     return sess;
 }
@@ -110,11 +183,26 @@ UDPSession::createSession(int sockfd) {
 void
 UDPSession::Update(uint32_t current) noexcept {
     for (;;) {
+		ssize_t n;
+		if (!m_bserver) {
 #ifdef __unix
-        ssize_t n = recv(m_sockfd, m_buf, sizeof(m_buf), 0);
+			n = recv(m_sockfd, m_buf, sizeof(m_buf), 0);
 #else
-		ssize_t n = recv(m_sockfd, (char*)m_buf, sizeof(m_buf), 0);
+			n = recv(m_sockfd, (char*)m_buf, sizeof(m_buf), 0);
 #endif
+		}
+		else {
+			struct sockaddr_in raddr;
+			socklen_t len;
+#ifdef __unix
+			n = recvfrom(m_sockfd, m_buf, sizeof(m_buf), 0, (struct sockaddr *) &raddr, &len);
+#else
+			n = recvfrom(m_sockfd, (char*)m_buf, sizeof(m_buf), 0, (struct sockaddr *) &raddr, &len);
+#endif
+			if (n > 0)
+				m_raddr = raddr;
+		}
+		
         if (n > 0) {
             if (fec.isEnabled()) {
                 // decode FEC packet
@@ -292,11 +380,23 @@ UDPSession::out_wrapper(const char *buf, int len, struct IKCPCB *, void *user) {
 ssize_t
 UDPSession::output(const void *buffer, size_t length) {
 	m_count += length;
+
+	ssize_t n;
+	if (!m_bserver) {
 #ifdef __unix
-    ssize_t n = send(m_sockfd, buffer, length, 0);
+		n = send(m_sockfd, buffer, length, 0);
 #else
-	ssize_t n = send(m_sockfd, (const char *)buffer, length, 0);
+		n = send(m_sockfd, (const char *)buffer, length, 0);
 #endif
+	}
+	else {
+#ifdef __unix
+		n = sendto(m_sockfd, buffer, length, 0, (struct sockaddr *) &m_raddr, sizeof(m_raddr));
+#else
+		n = sendto(m_sockfd, (const char *)buffer, length, 0, (struct sockaddr *) &m_raddr, sizeof(m_raddr));
+#endif
+	}
+
     return n;
 }
 

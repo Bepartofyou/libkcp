@@ -22,9 +22,22 @@ private:
     size_t dataShards{0};
     size_t parityShards{0};
 public:
+	// bepartofyou
+	bool m_bserver;
+	// Set session host
+	void SetHost(bool bserver) noexcept { m_bserver = bserver; }
 	IUINT64 m_count{ 0 };
 	IUINT64 m_count_l{ 0 };
+	struct sockaddr_in m_raddr;
 	ikcpcb * GetKcp() { return m_kcp; }
+
+#ifndef __unix
+	// Listen listen to the local port and returns UDPSession.
+	static UDPSession *Listen(const char *ip, uint16_t port);
+	// ListenWithOptions listen to the local port "raddr" on the network "udp" with packet encryption
+	static UDPSession *ListenWithOptions(const char *ip, uint16_t port, size_t dataShards, size_t parityShards);
+#endif
+	// bepartofyou
 
     UDPSession(const UDPSession &) = delete;
 
@@ -75,6 +88,11 @@ private:
     // DialIPv6 is the ipv6 version of Dial.
     static UDPSession *dialIPv6(const char *ip, uint16_t port);
 
+#ifndef __unix
+	// listenIPv6 is the ipv6 version of listen.
+	static UDPSession *listenIPv6(const char *ip, uint16_t port);
+#endif
+
     // out_wrapper
     static int out_wrapper(const char *buf, int len, struct IKCPCB *kcp, void *user);
 
@@ -82,15 +100,10 @@ private:
     ssize_t output(const void *buffer, size_t length);
 
     static UDPSession *createSession(int sockfd);
-
-
 };
 
 inline uint32_t currentMs() {
 	return iclock();
-    //struct timeval time;
-    //gettimeofday(&time, NULL);
-    //return uint32_t((time.tv_sec * 1000) + (time.tv_usec / 1000));
 }
 
 
