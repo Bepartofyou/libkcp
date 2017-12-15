@@ -48,7 +48,7 @@ int main() {
 	srand(iclock());
 
     UDPSession *sess = UDPSession::ListenWithOptions("0.0.0.0", 9999, 0,0);
-    sess->NoDelay(1, 20, 2, 1);
+    sess->NoDelay(1, 10, 2, 1);
 	sess->WndSize(1024, 1024);
     sess->SetMtu(1400);
 	sess->SetStreamMode(false);
@@ -126,7 +126,7 @@ int main() {
 			pthread_mutex_unlock(&mutex);
 #endif
 		} while (n != 0);
-		//isleep(2);
+		//isleep(1);
     }
 
 #ifdef ___unix

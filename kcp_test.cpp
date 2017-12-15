@@ -51,10 +51,10 @@ int main() {
 	srand(iclock());
 
     UDPSession *sess = UDPSession::DialWithOptions("192.168.56.128", 9999, 0,0);
-    sess->NoDelay(1, 20, 2, 1);
+    sess->NoDelay(1, 10, 2, 1);
 	//sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);
-	sess->WndSize(4096, 4096);
+	sess->WndSize(1024, 1024);
     sess->SetMtu(1400);
     //sess->SetStreamMode(true);
 	sess->SetStreamMode(false);
@@ -133,7 +133,7 @@ int main() {
 			pthread_mutex_unlock(&mutex);
 #endif
         } while(n!=0);
-		//isleep(2);
+		//isleep(1);
     }
 
 #ifdef ___unix

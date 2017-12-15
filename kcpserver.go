@@ -28,10 +28,11 @@ func server() {
 	}
 }
 func handle_client(conn *kcp.UDPSession) {
-	conn.SetWindowSize(1024, 1024)
+	conn.SetWindowSize(4096, 4096)
+	//	conn.SetNoDelay(1, 20, 2, 1)
 	conn.SetNoDelay(1, 20, 2, 1)
 	//	conn.SetMtu(512)
-	//conn.SetStreamMode(false)
+	conn.SetStreamMode(false)
 	fmt.Println("new client", conn.RemoteAddr())
 	buf := make([]byte, 65536)
 	count := 0

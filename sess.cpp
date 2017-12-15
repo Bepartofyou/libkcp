@@ -309,7 +309,7 @@ UDPSession::Read(char *buf, size_t sz) noexcept {
 
 ssize_t
 UDPSession::Write(const char *buf, size_t sz) noexcept {
-	if (ikcp_waitsnd(m_kcp) > 450)
+	if (ikcp_waitsnd(m_kcp) > 800)
 		return 0;
 
     int n = ikcp_send(m_kcp, const_cast<char *>(buf), int(sz));
