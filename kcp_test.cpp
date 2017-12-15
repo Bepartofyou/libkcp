@@ -54,7 +54,7 @@ int main() {
     sess->NoDelay(1, 10, 2, 1);
 	//sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);
-	sess->WndSize(1024, 1024);
+	sess->WndSize(4096, 4096);
     sess->SetMtu(1400);
     //sess->SetStreamMode(true);
 	sess->SetStreamMode(false);

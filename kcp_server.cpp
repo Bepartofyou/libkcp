@@ -13,8 +13,9 @@ static char *buf_w = NULL;
 static char *buf_r = NULL;
 
 static bool bstop = false;
+#define  MAX_LEN 20 * 1024
 
-//#define ___unix
+#define ___unix
 
 #ifdef ___unix
 #include <pthread.h>
@@ -30,26 +31,26 @@ void *send_thread(void* data) {
 	UDPSession *sess = (UDPSession *)data;
 	while (!bstop) {
 		pthread_mutex_lock(&mutex);
-		auto sz = strlen(buf_w);
-		int retval = sess->Write(buf_w, sz);
+
 		sess->Update(iclock());
-		gCount += retval;
+
+		ssize_t n = 0;
+		memset(buf_r, 0, MAX_LEN);
+		n = sess->Read(buf_r, MAX_LEN * 100);
+
+		sess->Update(iclock());
+
 		pthread_mutex_unlock(&mutex);
-		
-//		if(retval == 0)
-//		    isleep(1);
 	}
 }
 #endif //__unix
-
-#define  MAX_LEN 20 * 1024
 
 int main() {
 	srand(iclock());
 
     UDPSession *sess = UDPSession::ListenWithOptions("0.0.0.0", 9999, 0,0);
     sess->NoDelay(1, 10, 2, 1);
-	sess->WndSize(1024, 1024);
+	sess->WndSize(4096, 4096);
     sess->SetMtu(1400);
 	sess->SetStreamMode(false);
     sess->SetDSCP(46);
@@ -60,8 +61,7 @@ int main() {
     ssize_t nrecv = 0;
 	buf_w = (char *)malloc(MAX_LEN);
 	buf_r = (char *)malloc(MAX_LEN*100);
-	for (size_t i = 0; i < MAX_LEN; i += 10)
-	{
+	for (size_t i = 0; i < MAX_LEN; i += 10){
 		sprintf(buf_w + i, "tick-%05d", i);
 	}
 
@@ -71,8 +71,9 @@ int main() {
 	}
 
 	pthread_mutex_init(&mutex, NULL);
-	pthread_t ptid;
-	pthread_create(&ptid, NULL, send_thread, (void*)sess);
+	pthread_t ptid_1, ptid_2;
+	pthread_create(&ptid_1, NULL, send_thread, (void*)sess);
+	pthread_create(&ptid_2, NULL, send_thread, (void*)sess);
 #endif // __unix
 
 
@@ -81,56 +82,58 @@ int main() {
 		if(bstop)
 			break;
 
-		if (gTime==0){
-			gTime = iclock();
-			gStart = gTime;
-		}else {
-			if (iclock() - gTime > 1000) {
-#ifdef ___unix
-				pthread_mutex_lock(&mutex);
-#endif
-				ikcpcb* sKcp = sess->GetKcp();
-				printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kBps [realtotal] %llu kBps\n",
-						(gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000,
-						gCount/1000/((iclock()-gStart)/1000),sess->m_count/1000/((iclock()-gStart)/1000),sess->m_count/1000);
-				gCount_last = gCount;
-				sess->m_count_l = sess->m_count;
-				printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n", 
-					sKcp->rmt_wnd, sKcp->cwnd,sKcp->nsnd_buf,sKcp->nsnd_que,sKcp->nrcv_buf,sKcp->nrcv_que,
-					sKcp->rx_rttval, sKcp->rx_srtt, sKcp->rx_rto, sKcp->rx_minrto);
-#ifdef ___unix
-				pthread_mutex_unlock(&mutex);
-#endif
+		//sess->Update(iclock());
+		//
+		//ssize_t n = 0;
+		//do {
+
+			if (gTime == 0) {
 				gTime = iclock();
+				gStart = gTime;
 			}
-		}
-
-		sess->Update(iclock());
-		
-		ssize_t n = 0;
-		do {
+			else {
+				if (iclock() - gTime > 1000) {
 #ifdef ___unix
-			pthread_mutex_lock(&mutex);
+					pthread_mutex_lock(&mutex);
 #endif
-			memset(buf_r, 0, MAX_LEN);
-			n = sess->Read(buf_r, MAX_LEN * 100);
-
-			if (n > 0) {
-				auto sz = strlen(buf_r);
-				int retval = sess->Write(buf_r, sz);
-				gCount += retval;
+					ikcpcb* sKcp = sess->GetKcp();
+					printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kBps [realtotal] %llu kBps\n",
+						(gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000,
+						gCount / 1000 / ((iclock() - gStart) / 1000), sess->m_count / 1000 / ((iclock() - gStart) / 1000), sess->m_count / 1000);
+					gCount_last = gCount;
+					sess->m_count_l = sess->m_count;
+					printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n",
+						sKcp->rmt_wnd, sKcp->cwnd, sKcp->nsnd_buf, sKcp->nsnd_que, sKcp->nrcv_buf, sKcp->nrcv_que,
+						sKcp->rx_rttval, sKcp->rx_srtt, sKcp->rx_rto, sKcp->rx_minrto);
+#ifdef ___unix
+					pthread_mutex_unlock(&mutex);
+#endif
+					gTime = iclock();
+				}
 			}
-
-			sess->Update(iclock());
-#ifdef ___unix
-			pthread_mutex_unlock(&mutex);
-#endif
-		} while (n != 0);
-		//isleep(1);
+//#ifdef ___unix
+//			pthread_mutex_lock(&mutex);
+//#endif
+//			memset(buf_r, 0, MAX_LEN);
+//			n = sess->Read(buf_r, MAX_LEN * 100);
+//
+//			if (n > 0) {
+//				auto sz = strlen(buf_r);
+//				int retval = sess->Write(buf_r, sz);
+//				gCount += retval;
+//			}
+//
+//			sess->Update(iclock());
+//#ifdef ___unix
+//			pthread_mutex_unlock(&mutex);
+//#endif
+//		} while (n != 0);
+		isleep(10);
     }
 
 #ifdef ___unix
-	pthread_join(ptid, NULL);
+	pthread_join(ptid_1, NULL);
+	pthread_join(ptid_2, NULL);
 	pthread_mutex_destroy(&mutex);
 #endif // __unix
 
