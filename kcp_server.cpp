@@ -27,6 +27,9 @@ static void sig_handler(int signo){
 	bstop = true;
 }
 
+FILE* fp_output;
+
+
 void *send_thread(void* data) {
 	UDPSession *sess = (UDPSession *)data;
 	while (!bstop) {
@@ -37,6 +40,8 @@ void *send_thread(void* data) {
 		ssize_t n = 0;
 		memset(buf_r, 0, MAX_LEN);
 		n = sess->Read(buf_r, MAX_LEN * 100);
+		fwrite(buf_r, n, 1, fp_output);
+		fflush(fp_output);
 
 		sess->Update(iclock());
 
@@ -45,7 +50,15 @@ void *send_thread(void* data) {
 }
 #endif //__unix
 
-int main() {
+int main(int argc, char** argv) {
+	if (argc != 2) {
+		printf("Usage:         \n");
+		printf("      ./kcp_server filename\n");
+
+		exit(1);
+	}
+	fp_output = fopen(argv[1], "rb");
+
 	srand(iclock());
 
     UDPSession *sess = UDPSession::ListenWithOptions("0.0.0.0", 9999, 0,0);
@@ -76,16 +89,9 @@ int main() {
 	pthread_create(&ptid_2, NULL, send_thread, (void*)sess);
 #endif // __unix
 
-
-    //for (int i = 0; i < 10; i++) {
 	for (;;) {
 		if(bstop)
 			break;
-
-		//sess->Update(iclock());
-		//
-		//ssize_t n = 0;
-		//do {
 
 			if (gTime == 0) {
 				gTime = iclock();
@@ -111,23 +117,6 @@ int main() {
 					gTime = iclock();
 				}
 			}
-//#ifdef ___unix
-//			pthread_mutex_lock(&mutex);
-//#endif
-//			memset(buf_r, 0, MAX_LEN);
-//			n = sess->Read(buf_r, MAX_LEN * 100);
-//
-//			if (n > 0) {
-//				auto sz = strlen(buf_r);
-//				int retval = sess->Write(buf_r, sz);
-//				gCount += retval;
-//			}
-//
-//			sess->Update(iclock());
-//#ifdef ___unix
-//			pthread_mutex_unlock(&mutex);
-//#endif
-//		} while (n != 0);
 		isleep(10);
     }
 
@@ -147,4 +136,9 @@ int main() {
 		free(buf_r);
 		buf_r = NULL;
 	}
+
+	if (fp_output)
+		fclose(fp_output);
+
+	return 0;
 }
