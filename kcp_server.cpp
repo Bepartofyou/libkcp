@@ -40,7 +40,7 @@ void *send_thread(void* data) {
 		ssize_t n = 0;
 		memset(buf_r, 0, MAX_LEN);
 		n = sess->Read(buf_r, MAX_LEN * 100);
-		fwrite(buf_r, n, 1, fp_output);
+		fwrite(buf_r, 1, n, fp_output);
 		fflush(fp_output);
 
 		sess->Update(iclock());

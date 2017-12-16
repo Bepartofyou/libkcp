@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
 
 		if (retval) {
 			memset(buf_w, 0, MAX_LEN);
-			readsize = fread(buf_w, MAX_LEN, 1, fp_input);
+			readsize = fread(buf_w, 1, MAX_LEN, fp_input);
 		}	
         retval = sess->Write(buf_w, readsize);
         sess->Update(iclock());
@@ -90,7 +90,8 @@ int main(int argc, char** argv) {
             sess->Update(iclock());
         } while(n!=0);
 
-		if (readsize <= 0 && sKcp->nsnd_buf <= 0 && sKcp->nsnd_que <= 0)  //文件读完,并且kcp发送缓存没有数据的时候,代表已经全部发送成功
+
+		if (readsize <= 0 && sKcp && sKcp->nsnd_buf <= 0 && sKcp->nsnd_que <= 0)  //文件读完,并且kcp发送缓存没有数据的时候,代表已经全部发送成功
 			break;
     }
 
