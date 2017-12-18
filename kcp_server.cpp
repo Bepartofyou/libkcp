@@ -16,8 +16,8 @@ static bool bstop = false;
 #define ___unix
 
 #ifdef ___unix
-#include <pthread.h>
-#include <signal.h>
+//#include <pthread.h>
+//#include <signal.h>
 pthread_mutex_t mutex;
 
 void printStatistics(UDPSession *sess);
@@ -104,19 +104,21 @@ int main() {
 }
 
 void printStatistics(UDPSession *sess) {
+	IUINT32 tnow = iclock();
+
 	if (gTime == 0) {
-		gTime = iclock();
+		gTime = tnow;
 		gStart = gTime;
 	}
 	else {
-		if (iclock() - gTime > 1000) {
+		if (tnow - gTime > 1000) {
 #ifdef ___unix
 			pthread_mutex_lock(&mutex);
 #endif
 			ikcpcb* sKcp = sess->GetKcp();
 			printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kBps [realtotal] %llu kBps\n",
-				(gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000,
-				gCount / 1000 / ((iclock() - gStart) / 1000), sess->m_count / 1000 / ((iclock() - gStart) / 1000), sess->m_count / 1000);
+				(gCount - gCount_last) / (tnow - gTime), (sess->m_count - sess->m_count_l) / (tnow - gTime),
+				gCount / (tnow - gStart), sess->m_count / (tnow - gStart));
 			gCount_last = gCount;
 			sess->m_count_l = sess->m_count;
 			printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n",
@@ -125,7 +127,7 @@ void printStatistics(UDPSession *sess) {
 #ifdef ___unix
 			pthread_mutex_unlock(&mutex);
 #endif
-			gTime = iclock();
+			gTime = tnow;
 		}
 	}
 }
