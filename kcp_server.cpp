@@ -1,5 +1,3 @@
-//#include <unistd.h>
-//#include <sys/time.h>
 #include <cstring>
 #include <cstdio>
 #include "sess.h"
@@ -21,6 +19,8 @@ static bool bstop = false;
 #include <pthread.h>
 #include <signal.h>
 pthread_mutex_t mutex;
+
+void printStatistics(UDPSession *sess);
 
 static void sig_handler(int signo){
 	printf("thread stop sginal!\n");
@@ -76,58 +76,12 @@ int main() {
 	pthread_create(&ptid_2, NULL, send_thread, (void*)sess);
 #endif // __unix
 
-
-    //for (int i = 0; i < 10; i++) {
 	for (;;) {
 		if(bstop)
 			break;
 
-		//sess->Update(iclock());
-		//
-		//ssize_t n = 0;
-		//do {
+		printStatistics(sess);
 
-			if (gTime == 0) {
-				gTime = iclock();
-				gStart = gTime;
-			}
-			else {
-				if (iclock() - gTime > 1000) {
-#ifdef ___unix
-					pthread_mutex_lock(&mutex);
-#endif
-					ikcpcb* sKcp = sess->GetKcp();
-					printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kBps [realtotal] %llu kBps\n",
-						(gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000,
-						gCount / 1000 / ((iclock() - gStart) / 1000), sess->m_count / 1000 / ((iclock() - gStart) / 1000), sess->m_count / 1000);
-					gCount_last = gCount;
-					sess->m_count_l = sess->m_count;
-					printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n",
-						sKcp->rmt_wnd, sKcp->cwnd, sKcp->nsnd_buf, sKcp->nsnd_que, sKcp->nrcv_buf, sKcp->nrcv_que,
-						sKcp->rx_rttval, sKcp->rx_srtt, sKcp->rx_rto, sKcp->rx_minrto);
-#ifdef ___unix
-					pthread_mutex_unlock(&mutex);
-#endif
-					gTime = iclock();
-				}
-			}
-//#ifdef ___unix
-//			pthread_mutex_lock(&mutex);
-//#endif
-//			memset(buf_r, 0, MAX_LEN);
-//			n = sess->Read(buf_r, MAX_LEN * 100);
-//
-//			if (n > 0) {
-//				auto sz = strlen(buf_r);
-//				int retval = sess->Write(buf_r, sz);
-//				gCount += retval;
-//			}
-//
-//			sess->Update(iclock());
-//#ifdef ___unix
-//			pthread_mutex_unlock(&mutex);
-//#endif
-//		} while (n != 0);
 		isleep(10);
     }
 
@@ -146,5 +100,32 @@ int main() {
 	if (buf_r) {
 		free(buf_r);
 		buf_r = NULL;
+	}
+}
+
+void printStatistics(UDPSession *sess) {
+	if (gTime == 0) {
+		gTime = iclock();
+		gStart = gTime;
+	}
+	else {
+		if (iclock() - gTime > 1000) {
+#ifdef ___unix
+			pthread_mutex_lock(&mutex);
+#endif
+			ikcpcb* sKcp = sess->GetKcp();
+			printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kBps [realtotal] %llu kBps\n",
+				(gCount - gCount_last) / 1000, (sess->m_count - sess->m_count_l) / 1000,
+				gCount / 1000 / ((iclock() - gStart) / 1000), sess->m_count / 1000 / ((iclock() - gStart) / 1000), sess->m_count / 1000);
+			gCount_last = gCount;
+			sess->m_count_l = sess->m_count;
+			printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n",
+				sKcp->rmt_wnd, sKcp->cwnd, sKcp->nsnd_buf, sKcp->nsnd_que, sKcp->nrcv_buf, sKcp->nrcv_que,
+				sKcp->rx_rttval, sKcp->rx_srtt, sKcp->rx_rto, sKcp->rx_minrto);
+#ifdef ___unix
+			pthread_mutex_unlock(&mutex);
+#endif
+			gTime = iclock();
+		}
 	}
 }
