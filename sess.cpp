@@ -73,6 +73,7 @@ CSockSend::sendthread(void* arg) {
 			sock->m_list.pop_front();
 		}
 		else {
+			pthread_mutex_unlock(&sock->m_mutex);
 			continue;
 		}
 		pthread_mutex_unlock(&sock->m_mutex);
