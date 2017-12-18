@@ -6,7 +6,32 @@
 #include "util.h"
 #include <list>
 
-class UDPSession  {
+struct sendpkt {
+	int size;
+	char* data;
+};
+
+class CSockSend
+{
+public:
+	CSockSend(int sock);
+	~CSockSend();
+
+public:
+	static void* sendthread(void* arg);
+	void Start();
+	void Stop();
+	size_t InputData(char *buffer, size_t length);
+private:
+	int m_sockfd{ 0 };
+	std::list<sendpkt *> m_list;
+	bool m_bstop{ false };
+	pthread_mutex_t m_mutex;
+	pthread_t m_ptid;
+};
+
+
+class UDPSession {
 private:
     int m_sockfd{0};
     ikcpcb *m_kcp{nullptr};
@@ -29,18 +54,8 @@ public:
 	struct sockaddr_in m_raddr;
 	ikcpcb * GetKcp() { return m_kcp; }
 
-
-	//socket send thread
-	struct sendpkt{
-		int size;
-		char* data;
-	};
-	std::list<sendpkt *> m_list;
 	bool m_bthead{ false };
-	bool m_bstop{ false };
-	pthread_mutex_t m_mutex;
-	pthread_t m_ptid;
-	static void* sendthread(void* arg);
+	CSockSend* m_socksend;
 	void SetThread(bool bthead) noexcept;
 
 	// Listen listen to the local port and returns UDPSession.

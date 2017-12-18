@@ -4,30 +4,83 @@
 #include "util.h"
 #include <cstring>
 
+
+CSockSend::CSockSend(int sock){
+	m_sockfd = sock;
+	m_bstop = false;
+
+	pthread_mutex_init(&m_mutex, NULL);
+}
+
+CSockSend::~CSockSend(){
+	
+	while (m_list.size() > 0) {
+		sendpkt* pkt = m_list.front();
+		if (pkt->data) {
+			delete pkt->data;
+			pkt->data = NULL;
+		}
+		if (pkt) {
+			delete pkt;
+			pkt = NULL;
+		}
+
+		m_list.pop_front();
+	}
+
+	pthread_mutex_destroy(&m_mutex);
+}
+
+void 
+CSockSend::Start() {
+	pthread_create(&m_ptid, NULL, sendthread, (void*)this);
+}
+
+void
+CSockSend::Stop() {
+
+	m_bstop = true;
+	pthread_join(m_ptid, NULL);
+}
+
+size_t
+CSockSend::InputData(char *buffer, size_t length) {
+
+	sendpkt *pkt = new sendpkt;
+	pkt->size = length;
+	pkt->data = new char[pkt->size];
+	memcpy(pkt->data, buffer, length);
+	pthread_mutex_lock(&m_mutex);
+	m_list.push_back(pkt);
+	pthread_mutex_unlock(&m_mutex);
+
+	return length;
+}
+
 void *
-UDPSession::sendthread(void* arg) {
-	UDPSession* sess = (UDPSession *)arg;
+CSockSend::sendthread(void* arg) {
+	CSockSend* sock = (CSockSend *)arg;
 
 	sendpkt* pkt;
 	ssize_t n;
 
-	while (!sess->m_bstop)
+	while (!sock->m_bstop)
 	{
-		pthread_mutex_lock(&sess->m_mutex);
-		if (sess->m_list.size() > 0)
+		pthread_mutex_lock(&sock->m_mutex);
+		if (sock->m_list.size() > 0)
 		{
-			pkt = sess->m_list.front();
-			sess->m_list.pop_front();
+			pkt = sock->m_list.front();
+			sock->m_list.pop_front();
 		}
 		else {
 			continue;
 		}
-		pthread_mutex_unlock(&sess->m_mutex);
+		pthread_mutex_unlock(&sock->m_mutex);
 
 #ifdef __unix
-		n = send(sess->m_sockfd, pkt->data, pkt->size, 0);
+		n = send(sock->m_sockfd, pkt->data, pkt->size, 0);
 #else
-		n = send(sess->m_sockfd, (const char *)pkt->data, pkt->size, 0);
+		n = send(sock->m_sockfd, (const char *)pkt->data, pkt->size, 0);
 #endif
 		if (pkt->data) {
 			delete pkt->data;
@@ -42,12 +95,11 @@ UDPSession::sendthread(void* arg) {
 
 void 
 UDPSession::SetThread(bool bthead) noexcept {
-	m_bstop = false;
 	m_bthead = bthead;
 
 	if (m_bthead) {
-		pthread_mutex_init(&m_mutex, NULL);
-		pthread_create(&m_ptid, NULL, sendthread, (void*)this);
+		m_socksend = new CSockSend(m_sockfd);
+		m_socksend->Start();
 	}
 }
 
@@ -299,26 +351,10 @@ UDPSession::Destroy(UDPSession *sess) {
     if (nullptr == sess) return;
 
 	if (sess->m_bthead) {
-		sess->m_bstop = true;
-		pthread_join(sess->m_ptid, NULL);
-
-		pthread_mutex_lock(&sess->m_mutex);
-		while (sess->m_list.size() > 0) {
-			sendpkt* pkt = sess->m_list.front();
-			if (pkt->data) {
-				delete pkt->data;
-				pkt->data = NULL;
-			}
-			if (pkt) {
-				delete pkt;
-				pkt = NULL;
-			}
-
-			sess->m_list.pop_front();
+		if (sess->m_socksend) {
+			sess->m_socksend->Stop();
+			delete sess->m_socksend;
 		}
-		pthread_mutex_unlock(&sess->m_mutex);
-
-		pthread_mutex_destroy(&sess->m_mutex);
 	}
 
 	if (0 != sess->m_sockfd) {
@@ -462,13 +498,7 @@ UDPSession::output(const void *buffer, size_t length) {
 #endif
 		}
 		else {
-			sendpkt *pkt = new sendpkt;
-			pkt->size = length;
-			pkt->data = new char[pkt->size];
-			memcpy(pkt->data, buffer, length);
-			pthread_mutex_lock(&m_mutex);
-			m_list.push_back(pkt);
-			pthread_mutex_unlock(&m_mutex);
+			m_socksend->InputData((char*)buffer, length);
 		}
 	}
 	else {
