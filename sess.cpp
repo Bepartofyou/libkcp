@@ -41,7 +41,7 @@ UDPSession::sendthread(void* arg) {
 }
 
 void 
-UDPSession::SetThread(bool bthead) {
+UDPSession::SetThread(bool bthead) noexcept {
 	m_bstop = false;
 	m_bthead = bthead;
 
@@ -318,7 +318,7 @@ UDPSession::Destroy(UDPSession *sess) {
 		}
 		pthread_mutex_unlock(&sess->m_mutex);
 
-		pthread_mutex_destroy(&ess->m_mutex);
+		pthread_mutex_destroy(&sess->m_mutex);
 	}
 
 	if (0 != sess->m_sockfd) {
