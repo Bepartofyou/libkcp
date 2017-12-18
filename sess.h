@@ -22,7 +22,7 @@ public:
 	void Start();
 	void Stop();
 	size_t InputData(char *buffer, size_t length);
-private:
+public:
 	int m_sockfd{ 0 };
 	std::list<sendpkt *> m_list;
 	bool m_bstop{ false };

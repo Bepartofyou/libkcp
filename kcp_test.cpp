@@ -127,9 +127,9 @@ void printStatistics(UDPSession *sess) {
 			pthread_mutex_lock(&mutex);
 #endif
 			ikcpcb* sKcp = sess->GetKcp();
-			printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kBps [realtotal] %llu kBps\n",
+			printf("[kcpdata]  %llu kBps [realdata] %llu kBps [kcptotal] %llu kBps [realtotal] %llu kBps listszie:%d\n",
 				(gCount - gCount_last) / (tnow - gTime), (sess->m_count - sess->m_count_l) / (tnow - gTime),
-				gCount / (tnow - gStart), sess->m_count / (tnow - gStart));
+				gCount / (tnow - gStart), sess->m_count / (tnow - gStart), sess->m_socksend->m_list.size());
 			gCount_last = gCount;
 			sess->m_count_l = sess->m_count;
 			printf("[kcpinfo] rmt_wnd:%-4d,cwnd:%-4d,nsnd_buf:%-8d,nsnd_que:%-8d,nrcv_buf:%-8d,nrcv_que:%-8d,rx_rttval:%-2d,rx_srtt:%-2d,rx_rto:%-2d,rx_minrto:%-2d\n",
