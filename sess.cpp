@@ -4,6 +4,53 @@
 #include "util.h"
 #include <cstring>
 
+void *
+UDPSession::sendthread(void* arg) {
+	UDPSession* sess = (UDPSession *)arg;
+
+	sendpkt* pkt;
+	ssize_t n;
+
+	while (!sess->m_bstop)
+	{
+		pthread_mutex_lock(&sess->m_mutex);
+		if (sess->m_list.size() > 0)
+		{
+			pkt = sess->m_list.front();
+			sess->m_list.pop_front();
+		}
+		else {
+			continue;
+		}
+		pthread_mutex_unlock(&sess->m_mutex);
+
+#ifdef __unix
+		n = send(sess->m_sockfd, pkt->data, pkt->size, 0);
+#else
+		n = send(sess->m_sockfd, (const char *)pkt->data, pkt->size, 0);
+#endif
+		if (pkt->data) {
+			delete pkt->data;
+			pkt->data = NULL;
+		}
+		if (pkt) {
+			delete pkt;
+			pkt = NULL;
+		}
+	}
+}
+
+void 
+UDPSession::SetThread(bool bthead) {
+	m_bstop = false;
+	m_bthead = bthead;
+
+	if (m_bthead) {
+		pthread_mutex_init(&m_mutex, NULL);
+		pthread_create(&m_ptid, NULL, sendthread, (void*)this);
+	}
+}
+
 UDPSession *
 UDPSession::Listen(const char *ip, uint16_t port) {
 	UDPSession::netinit();
@@ -250,6 +297,30 @@ UDPSession::Update(uint32_t current) noexcept {
 void
 UDPSession::Destroy(UDPSession *sess) {
     if (nullptr == sess) return;
+
+	if (sess->m_bthead) {
+		sess->m_bstop = true;
+		pthread_join(sess->m_ptid, NULL);
+
+		pthread_mutex_lock(&sess->m_mutex);
+		while (sess->m_list.size() > 0) {
+			sendpkt* pkt = sess->m_list.front();
+			if (pkt->data) {
+				delete pkt->data;
+				pkt->data = NULL;
+			}
+			if (pkt) {
+				delete pkt;
+				pkt = NULL;
+			}
+
+			sess->m_list.pop_front();
+		}
+		pthread_mutex_unlock(&sess->m_mutex);
+
+		pthread_mutex_destroy(&ess->m_mutex);
+	}
+
 	if (0 != sess->m_sockfd) {
 		close(sess->m_sockfd); 		
 		UDPSession::netuninit();
@@ -383,11 +454,22 @@ UDPSession::output(const void *buffer, size_t length) {
 
 	ssize_t n;
 	if (!m_bserver) {
+		if (!m_bthead) {
 #ifdef __unix
-		n = send(m_sockfd, buffer, length, 0);
+			n = send(m_sockfd, buffer, length, 0);
 #else
-		n = send(m_sockfd, (const char *)buffer, length, 0);
+			n = send(m_sockfd, (const char *)buffer, length, 0);
 #endif
+		}
+		else {
+			sendpkt *pkt = new sendpkt;
+			pkt->size = length;
+			pkt->data = new char[pkt->size];
+			memcpy(pkt->data, buffer, length);
+			pthread_mutex_lock(&m_mutex);
+			m_list.push_back(pkt);
+			pthread_mutex_unlock(&m_mutex);
+		}
 	}
 	else {
 #ifdef __unix

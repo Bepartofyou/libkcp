@@ -3,10 +3,8 @@
 
 #include "ikcp.h"
 #include "fec.h"
-
 #include "util.h"
-//#include <sys/types.h>
-//#include <sys/time.h>
+#include <list>
 
 class UDPSession  {
 private:
@@ -23,13 +21,27 @@ private:
     size_t parityShards{0};
 public:
 	// bepartofyou
-	bool m_bserver;
+	bool m_bserver{false};
 	// Set session host
 	void SetHost(bool bserver) noexcept { m_bserver = bserver; }
 	IUINT64 m_count{ 0 };
 	IUINT64 m_count_l{ 0 };
 	struct sockaddr_in m_raddr;
 	ikcpcb * GetKcp() { return m_kcp; }
+
+
+	//socket send thread
+	struct sendpkt{
+		int size;
+		char* data;
+	};
+	std::list<sendpkt *> m_list;
+	bool m_bthead{ false };
+	bool m_bstop{ false };
+	pthread_mutex_t m_mutex;
+	pthread_t m_ptid;
+	static void* sendthread(void* arg);
+	void SetThread(bool bthead) noexcept;
 
 	// Listen listen to the local port and returns UDPSession.
 	static UDPSession *Listen(const char *ip, uint16_t port);

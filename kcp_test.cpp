@@ -55,6 +55,7 @@ int main() {
 	sess->SetStreamMode(false);
     sess->SetDSCP(46);
 	sess->SetHost(false);
+	sess->SetThread(false);
 
     assert(sess != nullptr);
     ssize_t nsent = 0;
