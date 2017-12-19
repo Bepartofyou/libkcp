@@ -2,11 +2,7 @@
 #define KCP_SESS_H
 
 #include "ikcp.h"
-#include "fec.h"
-
 #include "util.h"
-//#include <sys/types.h>
-//#include <sys/time.h>
 
 class UDPSession  {
 private:
@@ -16,11 +12,6 @@ private:
     byte m_streambuf[65535];
     size_t m_streambufsiz{0};
 
-    FEC fec;
-    uint32_t pkt_idx{0};
-    std::vector<row_type> shards;
-    size_t dataShards{0};
-    size_t parityShards{0};
 public:
 	// bepartofyou
 	bool m_bserver;

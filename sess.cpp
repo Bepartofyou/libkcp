@@ -1,5 +1,4 @@
 #include "sess.h"
-#include "encoding.h"
 #include <iostream>
 #include "util.h"
 #include <cstring>
@@ -42,13 +41,6 @@ UDPSession::ListenWithOptions(const char *ip, uint16_t port, size_t dataShards, 
 	auto sess = UDPSession::Listen(ip, port);
 	if (sess == nullptr) {
 		return nullptr;
-	}
-
-	if (dataShards > 0 && parityShards > 0) {
-		sess->fec = FEC::New(3 * (dataShards + parityShards), dataShards, parityShards);
-		sess->shards.resize(dataShards + parityShards, nullptr);
-		sess->dataShards = dataShards;
-		sess->parityShards = parityShards;
 	}
 	return sess;
 };
@@ -117,12 +109,6 @@ UDPSession::DialWithOptions(const char *ip, uint16_t port, size_t dataShards, si
         return nullptr;
     }
 
-    if (dataShards > 0 && parityShards > 0) {
-        sess->fec = FEC::New(3 * (dataShards + parityShards), dataShards, parityShards);
-        sess->shards.resize(dataShards + parityShards, nullptr);
-        sess->dataShards = dataShards;
-        sess->parityShards = parityShards;
-    }
     return sess;
 };
 
@@ -203,42 +189,8 @@ UDPSession::Update(uint32_t current) noexcept {
 				m_raddr = raddr;
 		}
 		
-        if (n > 0) {
-            if (fec.isEnabled()) {
-                // decode FEC packet
-                auto pkt = fec.Decode(m_buf, static_cast<size_t>(n));
-                if (pkt.flag == typeData) {
-                    auto ptr = pkt.data->data();
-                    // we have 2B size, ignore for typeData
-                    ikcp_input(m_kcp, (char *) (ptr + 2), pkt.data->size() - 2);
-                }
-
-                // allow FEC packet processing with correct flags.
-                if (pkt.flag == typeData || pkt.flag == typeFEC) {
-                    // input to FEC, and see if we can recover data.
-                    auto recovered = fec.Input(pkt);
-
-                    // we have some data recovered.
-                    for (auto &r : recovered) {
-                        // recovered data has at least 2B size.
-                        if (r->size() > 2) {
-                            auto ptr = r->data();
-                            // decode packet size, which is also recovered.
-                            uint16_t sz;
-                            decode16u(ptr, &sz);
-
-                            // the recovered packet size must be in the correct range.
-                            if (sz >= 2 && sz <= r->size()) {
-                                // input proper data to kcp
-                                ikcp_input(m_kcp, (char *) (ptr + 2), sz - 2);
-                                // std::cout << "sz:" << sz << std::endl;
-                            }
-                        }
-                    }
-                }
-            } else { // fec disabled
+        if (n > 0) {         
                 ikcp_input(m_kcp, (char *) (m_buf), n);
-            }
         } else {
             break;
         }
@@ -342,38 +294,7 @@ UDPSession::out_wrapper(const char *buf, int len, struct IKCPCB *, void *user) {
     assert(user != nullptr);
     UDPSession *sess = static_cast<UDPSession *>(user);
 
-    if (sess->fec.isEnabled()) {    // append FEC header
-        // extend to len + fecHeaderSizePlus2
-        // i.e. 4B seqid + 2B flag + 2B size
-        memcpy(sess->m_buf + fecHeaderSizePlus2, buf, static_cast<size_t>(len));
-        sess->fec.MarkData(sess->m_buf, static_cast<uint16_t>(len));
-        sess->output(sess->m_buf, len + fecHeaderSizePlus2);
-
-        // FEC calculation
-        // copy "2B size + data" to shards
-        auto slen = len + 2;
-        sess->shards[sess->pkt_idx] =
-                std::make_shared<std::vector<byte>>(&sess->m_buf[fecHeaderSize], &sess->m_buf[fecHeaderSize + slen]);
-
-        // count number of data shards
-        sess->pkt_idx++;
-        if (sess->pkt_idx == sess->dataShards) { // we've collected enough data shards
-            sess->fec.Encode(sess->shards);
-            // send parity shards
-            for (size_t i = sess->dataShards; i < sess->dataShards + sess->parityShards; i++) {
-                // append header to parity shards
-                // i.e. fecHeaderSize + data(2B size included)
-                memcpy(sess->m_buf + fecHeaderSize, sess->shards[i]->data(), sess->shards[i]->size());
-                sess->fec.MarkFEC(sess->m_buf);
-                sess->output(sess->m_buf, sess->shards[i]->size() + fecHeaderSize);
-            }
-
-            // reset indexing
-            sess->pkt_idx = 0;
-        }
-    } else { // No FEC, just send raw bytes,
-        sess->output(buf, static_cast<size_t>(len));
-    }
+    sess->output(buf, static_cast<size_t>(len));
     return 0;
 }
 

@@ -1,5 +1,3 @@
-//#include <unistd.h>
-//#include <sys/time.h>
 #include <cstring>
 #include <cstdio>
 #include "sess.h"
@@ -14,7 +12,7 @@ static char *buf_r = NULL;
 
 static bool bstop = false;
 
-//#define ___unix
+#define ___unix
 
 #ifdef ___unix
 #include <pthread.h>
@@ -50,7 +48,7 @@ int main() {
     //srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
 	srand(iclock());
 
-    UDPSession *sess = UDPSession::DialWithOptions("192.168.56.128", 9999, 0,0);
+    UDPSession *sess = UDPSession::DialWithOptions("192.168.56.129", 9999, 0,0);
     sess->NoDelay(1, 10, 2, 1);
 	//sess->NoDelay(1, 20, 2, 1);
     //sess->WndSize(128, 128);

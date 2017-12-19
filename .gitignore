@@ -1,1 +1,5 @@
+gcc_Debug.h
+gcc_Release.h
+debug/
 .idea/
+tmp/

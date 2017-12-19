@@ -9,6 +9,8 @@
 
 #include "ikcp.h"
 
+typedef unsigned char byte;
+
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 //#include <winsock.h>
 #include <WinSock2.h>
